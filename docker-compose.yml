@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  stable-diffusion-webui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - DEBIAN_FRONTEND=noninteractive
+        - BUILDKIT_INLINE_CACHE=1
+      network: host
+    container_name: stable-diffusion-webui
+    ports:
+      - "7860:7860"
+    volumes:
+      # Models directory (persistent storage)
+      - ./models:/app/models
+      # Outputs directory (persistent storage)
+      - ./outputs:/app/outputs
+      # Embeddings directory (persistent storage)
+      - ./embeddings:/app/embeddings
+      # Extensions directory (persistent storage)
+      - ./extensions:/app/extensions
+      # Config files (persistent storage)
+      - ./config.json:/app/config.json
+      - ./ui-config.json:/app/ui-config.json
+    environment:
+      - COMMANDLINE_ARGS=--use-cpu all --precision full --no-half --skip-torch-cuda-test --listen --api --share
+      - GRADIO_SERVER_NAME=0.0.0.0
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+
+  # Alternative build using newer base image (use if main build has network issues)
+  # stable-diffusion-webui-alt:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.alt
+  #     args:
+  #       - DEBIAN_FRONTEND=noninteractive
+  #     network: host
+  #   container_name: stable-diffusion-webui-alt
+  #   ports:
+  #     - "7860:7860"
+  #   volumes:
+  #     - ./models:/app/models
+  #     - ./outputs:/app/outputs
+  #     - ./embeddings:/app/embeddings
+  #     - ./extensions:/app/extensions
+  #     - ./config.json:/app/config.json
+  #     - ./ui-config.json:/app/ui-config.json
+  #   environment:
+  #     - COMMANDLINE_ARGS=--use-cpu all --precision full --no-half --skip-torch-cuda-test --listen --api --share
+  #     - GRADIO_SERVER_NAME=0.0.0.0
+  #   restart: unless-stopped
+
+  # Optional: GPU-enabled version (uncomment if you have NVIDIA GPU support)
+  # stable-diffusion-webui-gpu:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.gpu
+  #   container_name: stable-diffusion-webui-gpu
+  #   ports:
+  #     - "7860:7860"
+  #   volumes:
+  #     - ./models:/app/models
+  #     - ./outputs:/app/outputs
+  #     - ./embeddings:/app/embeddings
+  #     - ./extensions:/app/extensions
+  #     - ./config.json:/app/config.json
+  #     - ./ui-config.json:/app/ui-config.json
+  #   environment:
+  #     - COMMANDLINE_ARGS=--listen --api --xformers --share
+  #     - GRADIO_SERVER_NAME=0.0.0.0
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: all
+  #             capabilities: [gpu]
+  #   restart: unless-stopped

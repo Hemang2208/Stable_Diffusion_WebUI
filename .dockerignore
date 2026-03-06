@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Outputs and cache
+outputs/*
+cache/*
+tmp/*
+
+# Models (mount these as volumes instead)
+models/Stable-diffusion/*.ckpt
+models/Stable-diffusion/*.safetensors
+models/Stable-diffusion/*.pt
+models/VAE/*.ckpt
+models/VAE/*.safetensors
+models/VAE/*.pt
+models/Lora/*
+models/hypernetworks/*
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Documentation
+*.md
+!README.md
+
+# Config (these should be customized)
+config.json
+ui-config.json
+config_states/*
+
+# Extensions user installed
+extensions/*
+
+# Logs
+*.log

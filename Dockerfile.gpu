@@ -1,0 +1,86 @@
+# GPU-enabled version of Stable Diffusion WebUI
+FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
+
+# Set working directory
+WORKDIR /app
+
+# Configure apt to be more resilient to network issues
+RUN echo 'Acquire::Retries "3";' > /etc/apt/apt.conf.d/80-retries && \
+    echo 'Acquire::http::Timeout "120";' >> /etc/apt/apt.conf.d/80-retries && \
+    echo 'Acquire::ftp::Timeout "120";' >> /etc/apt/apt.conf.d/80-retries
+
+# Install system dependencies and Python 3.10.11 with retry logic
+RUN apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get update --fix-missing && \
+    apt-get install -y --no-install-recommends --fix-missing \
+    software-properties-common \
+    ca-certificates \
+    && add-apt-repository ppa:deadsnakes/ppa \
+    && apt-get update --fix-missing \
+    && apt-get install -y --no-install-recommends --fix-missing \
+    git \
+    wget \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxrender1 \
+    libxext6 \
+    libgomp1 \
+    python3.10 \
+    python3.10-dev \
+    python3.10-distutils \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Set Python 3.10 as default
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1 && \
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1
+
+# Copy requirements files
+COPY requirements.txt requirements_versions.txt ./
+COPY requirements-test.txt ./
+
+# Upgrade pip and install specific build tools
+RUN python -m pip install --upgrade pip && \
+    pip install setuptools==68.2.2 wheel
+
+# Install NumPy with specific version for compatibility
+RUN pip install numpy==1.26.4
+
+# Install PyTorch with CUDA support
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# Install xformers for better memory efficiency (optional but recommended)
+RUN pip install xformers
+
+# Install CLIP manually without build isolation
+RUN pip install git+https://github.com/openai/CLIP.git --no-build-isolation
+
+# Install main requirements
+RUN pip install -r requirements.txt
+
+# Copy the entire application
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p models/Stable-diffusion models/VAE models/GFPGAN models/ESRGAN \
+    models/BSRGAN models/RealESRGAN models/Codeformer models/LDSR models/SwinIR \
+    models/ScuNET models/Lora models/hypernetworks embeddings outputs cache config_states \
+    extensions repositories
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV GRADIO_SERVER_NAME=0.0.0.0
+ENV COMMANDLINE_ARGS="--listen --api --xformers --share"
+ENV CUDA_VISIBLE_DEVICES=0
+
+# Expose port for web interface
+EXPOSE 7860
+
+# Verify installation
+RUN python -c "import torch; print('CUDA available:', torch.cuda.is_available()); import clip, numpy; print('Environment OK')"
+
+# Run the application
+CMD ["python", "launch.py"]
