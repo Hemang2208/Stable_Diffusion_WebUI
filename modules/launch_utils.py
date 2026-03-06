@@ -390,6 +390,11 @@ def prepare_environment():
         )
     startup_timer.record("torch GPU test")
 
+    # Ensure wheel and setuptools are installed for packages that need build tools
+    if not is_installed("wheel") or not is_installed("setuptools"):
+        run_pip("install --upgrade wheel setuptools", "build tools (wheel, setuptools)")
+        startup_timer.record("install build tools")
+
     if not is_installed("clip"):
         run_pip(f"install {clip_package}", "clip")
         startup_timer.record("install clip")

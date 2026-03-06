@@ -43,13 +43,30 @@ goto :show_stdout_stderr
 
 :upgrade_pip
 "%VENV_DIR%\Scripts\Python.exe" -m pip install --upgrade pip
-if %ERRORLEVEL% == 0 goto :activate_venv
+if %ERRORLEVEL% == 0 goto :install_build_tools
 echo Warning: Failed to upgrade PIP version
+
+:install_build_tools
+echo Installing build tools (setuptools, wheel)...
+"%VENV_DIR%\Scripts\Python.exe" -m pip install --upgrade setuptools wheel
+echo Installing essential dependencies with specific versions...
+"%VENV_DIR%\Scripts\Python.exe" -m pip install numpy==1.26.4 setuptools==68.2.2
+if %ERRORLEVEL% == 0 goto :activate_venv
+echo Warning: Failed to install dependencies
 
 :activate_venv
 set PYTHON="%VENV_DIR%\Scripts\Python.exe"
 call "%VENV_DIR%\Scripts\activate.bat"
 echo venv %PYTHON%
+
+:install_clip
+echo Checking for CLIP installation...
+%PYTHON% -c "import clip" >tmp/stdout.txt 2>tmp/stderr.txt
+if %ERRORLEVEL% == 0 goto :skip_venv
+echo Installing CLIP with --no-build-isolation...
+%PYTHON% -m pip install git+https://github.com/openai/CLIP.git --no-build-isolation >tmp/stdout.txt 2>tmp/stderr.txt
+if %ERRORLEVEL% == 0 goto :skip_venv
+echo Warning: Failed to install CLIP, but continuing...
 
 :skip_venv
 if [%ACCELERATE%] == ["True"] goto :accelerate
